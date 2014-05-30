@@ -1,6 +1,6 @@
 (defproject thread-load "0.1.0-SNAPSHOT"
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
+  :description "Load balancing work units over multiple threads, meant for long running threads. "
+  :url "https://github.com/gerritjvv/thread-load"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 

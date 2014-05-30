@@ -2,6 +2,11 @@
 
 This project aims to solve problems in the domain of running functions on data units from multiple threads continuously.
  
+```clojure
+[thread-load "0.1.0-SNAPSHOT"]
+```
+
+See: https://clojars.org/thread-load
 
 ## Overview 
 
