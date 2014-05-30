@@ -15,5 +15,5 @@
            ]
   :dependencies [
 		[org.clojure/tools.logging "0.2.6"]
-                [midje "1.6-alpha2" :scope "test"]
+    [org.clojure/test.check "0.5.8" :scope "test"]
 		[org.clojure/clojure "1.6.0"]])
