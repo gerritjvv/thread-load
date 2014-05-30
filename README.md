@@ -3,7 +3,7 @@
 This project aims to solve problems in the domain of running functions on data units from multiple threads continuously.
  
 
-## Problem Descriptions 
+## Overview 
 
 You have a continuous stream of data and want them to be processed continuously from multiple threads.
 Each worker processor has an init, exec and stop function.
