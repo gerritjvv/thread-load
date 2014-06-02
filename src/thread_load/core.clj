@@ -42,9 +42,13 @@
        :terminate state
        (recur (exec-on-data queue exec state)))))
       
-(defn create-pool [& {:keys [queue-limit] :or {queue-limit 100}}]
+(defn create-pool 
+  "Entry point to the API and creates a pool from which consumers can be added
+   Optional keys are :queue-limit = the default is 100 and is the number items a queue can fill before it blocks,
+                     :thread-pool = default is a cached thread pool, and is the thread pool in which consumers will run"
+  [& {:keys [queue-limit thread-pool] :or {queue-limit 100 thread-pool (Executors/newCachedThreadPool)}}]
   {:queue (ArrayBlockingQueue. queue-limit)
-   :thread-pool  (Executors/newCachedThreadPool)
+   :thread-pool thread-pool
    })
 
 (defn add-consumer 
