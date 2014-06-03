@@ -1,4 +1,4 @@
-(defproject thread-load "0.1.0"
+(defproject thread-load "0.1.1"
   :description "Load balancing work units over multiple threads, meant for long running threads. "
   :url "https://github.com/gerritjvv/thread-load"
   :license {:name "Eclipse Public License"
@@ -7,7 +7,6 @@
   :global-vars {*warn-on-reflection* true
                 *assert* false}
   :javac-options ["-target" "1.6" "-source" "1.6" "-Xlint:-options"]
-  :java-source-paths ["java"]
   
   :plugins [
          [lein-midje "3.0.1"] [lein-marginalia "0.7.1"]
