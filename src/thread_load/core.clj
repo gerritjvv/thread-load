@@ -20,7 +20,7 @@
   (.take queue))
 
 (defn call-on-fail 
-  "Only calls init if the return of stop is not :terminate of :fail"
+  "Only calls init if the return of stop is not :terminate or :fail"
   [init stop state]
   (let [new-state (call-f stop state nil true) ;if stop throws an exception we need to terminate
         status (:status new-state)]
@@ -56,10 +56,15 @@
    Returns the pool"
   [pool init exec stop]
   (let [^ExecutorService thread-pool (:thread-pool pool)
-        ^Runnable r-f (fn []
+        f #(let [state (worker-runner! (:queue pool) init exec stop)]
+            (error "Exit work pool consumer: " state))
+        ^Runnable r-f (fn r-f []
                         (try
-                          (worker-runner! (:queue pool) init exec stop)
-                          (catch Throwable t (prn t))))]
+                          (f)
+                          (catch InterruptedException e nil);ignore interrupted exceptions and exit
+                          (catch Throwable t
+                            (do
+                              (.printStackTrace t)))))]
     (.submit thread-pool r-f)
     pool))
 
