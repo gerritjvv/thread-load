@@ -3,7 +3,7 @@
 This project aims to solve problems in the domain of running functions on data units from multiple threads continuously.
  
 ```clojure
-[thread-load "0.1.0-SNAPSHOT"]
+[![Clojars Project](http://clojars.org/thread-load/latest-version.svg)](http://clojars.org/thread-load)
 ```
 
 See: https://clojars.org/thread-load
