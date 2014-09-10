@@ -2,9 +2,8 @@
 
 This project aims to solve problems in the domain of running functions on data units from multiple threads continuously.
  
-```clojure
+
 [![Clojars Project](http://clojars.org/thread-load/latest-version.svg)](http://clojars.org/thread-load)
-```
 
 See: https://clojars.org/thread-load
 
