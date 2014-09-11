@@ -28,7 +28,7 @@ This allows the init function to track how many failures have occurred.
 
 (require '[thread-load.core :refer :all])
 
-(def pool (create-pool 100))
+(def pool (create-pool))
 ;; create a pool with a blocking queue of 100
 
 (dotimes [i 10] ;add 10 consumers i.e 10 threads consuming from the pool's queue
@@ -41,7 +41,7 @@ This allows the init function to track how many failures have occurred.
 
 (publish! pool :a) ;sends :a to the queue, which will run the exec function of a consumer;
 
-(shutdown-pool! pool 10000)
+(shutdown-pool pool 10000)
 
 ```
 
