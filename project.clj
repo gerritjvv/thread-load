@@ -1,4 +1,4 @@
-(defproject thread-load "0.1.3"
+(defproject thread-load "0.1.4-SNAPSHOT"
   :description "Load balancing work units over multiple threads, meant for long running threads. "
   :url "https://github.com/gerritjvv/thread-load"
   :license {:name "Eclipse Public License"
@@ -13,6 +13,7 @@
          [lein-kibit "0.0.8"] [no-man-is-an-island/lein-eclipse "2.0.0"]
            ]
   :dependencies [
+    [com.lmax/disruptor "3.3.0"]
 		[org.clojure/tools.logging "0.2.6"]
     [org.clojure/test.check "0.5.8" :scope "test"]
-		[org.clojure/clojure "1.6.0"]])
+		[org.clojure/clojure "1.6.0" :scope "provided"]])
