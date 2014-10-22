@@ -1,4 +1,4 @@
-(defproject thread-load "0.1.6"
+(defproject thread-load "0.1.7"
   :description "Load balancing work units over multiple threads, meant for long running threads. "
   :url "https://github.com/gerritjvv/thread-load"
   :license {:name "Eclipse Public License"

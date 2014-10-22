@@ -41,8 +41,11 @@ public class StreamsProcessor {
         ISeq s = conf.getConf().seq();
         if(s != null){
             SeqIterator it = new SeqIterator(s);
-            while(it.hasNext())
-                v = v.cons(it.next());
+            while(it.hasNext()){
+                MapEntry entry = (MapEntry) it.next();
+                v = v.cons(entry.getKey()).cons(entry.getValue());
+            }
+
         }
 
 

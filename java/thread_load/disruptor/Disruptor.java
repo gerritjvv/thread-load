@@ -2,8 +2,8 @@ package thread_load.disruptor;
 
 import clojure.lang.*;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Java support for thread-load.disruptor
@@ -41,8 +41,10 @@ public class Disruptor {
         ISeq s = conf.getConf().seq();
         if(s != null){
             SeqIterator it = new SeqIterator(s);
-            while(it.hasNext())
-                v = v.cons(it.next());
+            while(it.hasNext()) {
+                MapEntry entry = (MapEntry) it.next();
+                v = v.cons(entry.getKey()).cons(entry.getValue());
+            }
         }
 
        return new Disruptor(RT.var("thread-load.disruptor", "create-disruptor").applyTo(v.seq()));
@@ -88,10 +90,17 @@ public class Disruptor {
     }
 
     public static void test(){
-        Disruptor disruptor = Disruptor.create(new AFn() {
+
+        DisruptorConf conf = new DisruptorConf();
+        conf.setExecutorService(Executors.newCachedThreadPool());
+        conf.setProducerType(DisruptorConf.PRODUCER_TYPE.SINGLE);
+        conf.setWaitStrategy(DisruptorConf.WAIT_STRATEGY.SPIN);
+
+        Disruptor disruptor = Disruptor.create(conf,
+           new AFn() {
             @Override
             public Object invoke(Object v) {
-                System.out.println("Val: " + v);
+                System.out.println("Val1: " + v);
                 return null;
             }
         });

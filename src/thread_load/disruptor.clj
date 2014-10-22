@@ -47,7 +47,7 @@
 
 
 (defn create-disruptor [event-f & {:keys [buffer-size producer-type wait-strategy executor-service]
-                                   :or {buffer-size 1024 producer-type :single wait-strategy :block}}]
+                                   :or {buffer-size 1024 producer-type :multi wait-strategy :block executor-service nil}}]
   (let [^ExecutorService service (if executor-service executor-service (Executors/newCachedThreadPool))
         ^EventFactory event-factory (create-event-factory)
         ^Disruptor disruptor (doto

@@ -61,12 +61,16 @@ use CPU even when you are not using the disruptor, but with higher throughput an
 
 The default strategy chosen is :block.
 
+The producer type is by default :single but if your planning on publishing from multiple threads  
+this needs to be set the :multi.
+
+
 *Clojure*
 
 ```clojure
 (require '[thread-load.disruptor :refer :all])
 
-(def d (create-disruptor (fn [v] (prn "Val: " v)) :wait-strategy :block))
+(def d (create-disruptor (fn [v] (prn "Val: " v)) :wait-strategy :block :producer-type :multi))
 
 (dotimes [i 10] (publish! d i))
 (shutdown-pool d)
