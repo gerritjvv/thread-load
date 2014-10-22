@@ -1,7 +1,7 @@
 (ns thread-load.disruptor
   (:import
     [thread_load Event]
-    [java.util.concurrent Executors ExecutorService]
+    [java.util.concurrent Executors ExecutorService TimeUnit]
     [java.util.concurrent.atomic AtomicReference]
     [com.lmax.disruptor EventFactory EventHandler RingBuffer YieldingWaitStrategy BlockingWaitStrategy BusySpinWaitStrategy WaitStrategy]
     [com.lmax.disruptor.dsl Disruptor ProducerType ProducerType]))
@@ -46,9 +46,9 @@
   (.handleEventsWith ^Disruptor disruptor (into-array [(event-handler f)])))
 
 
-(defn create-disruptor [threads event-f & {:keys [buffer-size producer-type wait-strategy]
-                                           :or {buffer-size 1024 producer-type :single wait-strategy :yield}}]
-  (let [^ExecutorService service (Executors/newCachedThreadPool)
+(defn create-disruptor [event-f & {:keys [buffer-size producer-type wait-strategy executor-service]
+                                   :or {buffer-size 1024 producer-type :single wait-strategy :block}}]
+  (let [^ExecutorService service (if executor-service executor-service (Executors/newCachedThreadPool))
         ^EventFactory event-factory (create-event-factory)
         ^Disruptor disruptor (doto
                                  (Disruptor. event-factory buffer-size
@@ -57,8 +57,12 @@
                                              (get-wait-strategy wait-strategy))
                                  (.handleEventsWith (into-array [(event-handler event-f)]))
                                  .start)]
-    {:exec-service service :ring-buffer (.getRingBuffer disruptor) :disruptor disruptor}))
+    {:exec-service service :ring-buffer (.getRingBuffer disruptor) :disruptor disruptor :exec-service-type (if executor-service :shared :unique) }))
 
 
-(defn shutdown-pool [{:keys [disruptor]}]
-  (.shutdown disruptor))
+(defn shutdown-pool [{:keys [disruptor exec-service-type exec-service]}]
+  (.shutdown ^Disruptor disruptor)
+  (when (= exec-service-type :unique)
+     (.shutdown ^ExecutorService exec-service)
+     (.awaitTermination ^ExecutorService exec-service 2000 TimeUnit/MILLISECONDS)
+     (.shutdownNow ^ExecutorService exec-service)))

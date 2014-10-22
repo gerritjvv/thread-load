@@ -51,6 +51,48 @@ This allows the init function to track how many failures have occurred.
 
 ```
 
+## Disruptor
+
+The disruptor pattern is a quick way to communicate between threads or do async handoff.
+
+Its important to choose the correct wait strategy for each disruptor, :yield and :spin will  
+use CPU even when you are not using the disruptor, but with higher throughput and lower latency,   
+:block will only use CPU if when messages are published and consumed but has higher latency.  
+
+The default strategy chosen is :block.
+
+*Clojure*
+
+```clojure
+(require '[thread-load.disruptor :refer :all])
+
+(def d (create-disruptor (fn [v] (prn "Val: " v)) :wait-strategy :block))
+
+(dotimes [i 10] (publish! d i))
+(shutdown-pool d)
+
+```
+
+*Java*
+
+```java
+
+import clojure.lang.AFn;
+import thread_load.disruptor.Disruptor;
+
+Disruptor disruptor = Disruptor.create(new AFn() {
+    @Override
+    public Object invoke(Object v) {
+       System.out.println("Val: " + v);
+       return null;
+    }
+});
+
+for(int i = 0; i < 10; i++)
+   disruptor.publish(i);
+
+disruptor.shutdown();
+```
 ## Loading from N Streams
 
 Scale the reading of N streams by splitting the logic of reading from the streams from the logic of processing the data.  
@@ -71,6 +113,7 @@ The  functions do:
   * streams-read-f reads a single data item from the stream (for batching this function could read multiple values).
   * process-f processes a single data point (or if you know the streams-read-f returns multiple values you can process them here). 
   
+*Clojure*
 
 ```clojure
 
@@ -102,7 +145,7 @@ The  functions do:
                          
 ```
 
-For java integration
+*Java*
 
 ```java
 
@@ -113,5 +156,5 @@ StreamsProcessor p = StreamsProcessor.createProcessor(loaderFn, readFn, processF
 
 //to shutdown
 p.shutdown(2000);
-
+```
 

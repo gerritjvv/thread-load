@@ -15,7 +15,7 @@
          (prop/for-all [a gen/nat]
                        (let [iterations 100000
                              ^AtomicLong i (AtomicLong. 0)
-                             d (create-disruptor 2 (fn [n] (.incrementAndGet i)))]
+                             d (create-disruptor (fn [n] (.incrementAndGet i)))]
 
                          (dotimes [i iterations]
                            (publish! d 1))
