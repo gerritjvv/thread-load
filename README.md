@@ -51,6 +51,37 @@ This allows the init function to track how many failures have occurred.
 
 ```
 
+## Bounded Executor Service
+
+All ExecutorServices created by the java class Executors have unbounded queues which can create problems if the tasks take
+more than the expected time.
+
+In general all unbounded queues is a very bad idea.
+
+This library implements a quick utilty function and java class to create a bounded blocking Executor Service.
+
+*Clojure*
+
+```clojure
+
+(use 'thread-load.core)
+
+(def p (bounded-executor :queue-size 1 :pool-size 1))
+
+(executor-submit p #(Thread/sleep 5000))
+
+```
+
+*Java*:
+
+```java
+import java.util.concurrent.ExecutorService;
+import thread_load.blocking.BlockingExecutor;
+
+ExecutorService exec = new BlockingExecutor(1, 1);
+```
+
+
 ## Disruptor
 
 The disruptor pattern is a quick way to communicate between threads or do async handoff.
@@ -161,4 +192,6 @@ StreamsProcessor p = StreamsProcessor.createProcessor(loaderFn, readFn, processF
 //to shutdown
 p.shutdown(2000);
 ```
+
+
 

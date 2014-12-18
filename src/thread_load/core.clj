@@ -13,7 +13,6 @@
   bounded-executor
   "Create a Executor Pool that blocks when the queue is full"
   [& {:keys [pool-size queue-size] :or {pool-size 10 queue-size 10}}]
-  (prn "pool-size: " pool-size " " queue-size)
   (BlockingExecutor. (int pool-size) (int queue-size)))
 
 (defn executor-submit
