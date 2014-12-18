@@ -2,9 +2,24 @@
   (:require [clojure.tools.logging :refer [error]])
   (:import
     [java.util ArrayList]
-    [java.util.concurrent BlockingQueue ArrayBlockingQueue Executors ExecutorService TimeUnit]))
+    [java.util.concurrent BlockingQueue ArrayBlockingQueue Executors ExecutorService TimeUnit ThreadPoolExecutor]
+    (thread_load.blocking BlockingExecutor)))
 
 (declare exec-on-bulk-data)
+
+
+(defn
+  ^ThreadPoolExecutor
+  bounded-executor
+  "Create a Executor Pool that blocks when the queue is full"
+  [& {:keys [pool-size queue-size] :or {pool-size 10 queue-size 10}}]
+  (prn "pool-size: " pool-size " " queue-size)
+  (BlockingExecutor. (int pool-size) (int queue-size)))
+
+(defn executor-submit
+  "Submits the function f to the ExceutorService, blocks only if a bounded-executor is used"
+  [^ExecutorService exec ^Runnable f]
+  (.submit exec f))
 
 (defn call-f 
   "Calls f as (f state data) if an exception is thrown a :status :fail :throwble t:Throwable is added to the state."
@@ -87,7 +102,7 @@
    If no data is available in the queue a blocking operation is performed
    Note the return value is of type Collection."
   [{:keys [^BlockingQueue queue]} n]
-  (let [arr (ArrayList. n)
+  (let [arr (ArrayList. (int n))
         n2 (.drainTo queue arr)]
     (if (zero? n2)
       [(get-queue-data! queue)]
