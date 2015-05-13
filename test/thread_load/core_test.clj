@@ -32,7 +32,8 @@
     (let [state (worker-runner! nil 
                   (fn [& _] {:called [:init] :status :fail}) (fn [&_]) 
                   (fn [{:keys [called status]} data]  
-                    {:called (conj called :stop) :status :terminate}))]
+                    {:called (conj called :stop) :status :terminate})
+                  )]
         (= [:init :stop] (:called state)))))
                                              
 

@@ -36,12 +36,7 @@
   [^BlockingQueue queue]
   (if-let [v (.poll queue 5 TimeUnit/SECONDS)]
     v
-    (do
-      (debug "No data from queue, blocking till data becomes available")
-      (try
-        (.take queue)
-        (finally
-          (debug "Unblocked"))))))
+    (.take queue)))
 
 (defn call-on-fail 
   "Only calls init if the return of stop is not :terminate or :fail"
@@ -74,6 +69,7 @@
   {:queue (ArrayBlockingQueue. queue-limit)
    :thread-pool thread-pool
    :limit queue-limit
+   :active-threads (atom #{})
    })
 
 
@@ -86,23 +82,35 @@
         f #(let [state (worker-runner! (if (> bulk 1) exec-on-bulk-data exec-on-data) (:queue pool) init exec stop bulk)]
             (error "Exit work pool consumer: " state))
         ^Runnable r-f (fn r-f []
+                        ;report current thread
+                        (swap! (:active-threads pool) conj (Thread/currentThread))
                         (try
                           (f)
                           (catch InterruptedException e nil);ignore interrupted exceptions and exit
                           (catch Throwable t
                             (do
+                              (error t t)
                               (.printStackTrace t)))))]
     (.submit thread-pool r-f)
     pool))
+
+(defn- reset-consumer-threads [{:keys [active-threads]}]
+  (doseq [th @active-threads]
+    (info "Interrupting thread " th)
+    (.interrupt ^Thread th)))
 
 (defn publish! 
   "Will block if the queue is full otherwise will send data to the queue which will be processed,
    by one of the consumer functions
    Returns the pool"
-  [pool data]
-   (when-not (.offer ^BlockingQueue (:queue pool) data 5 TimeUnit/SECONDS)
+  [pool data & {:keys [blocking-timeout] :or {blocking-timeout 120}}]
+   (when-not (.offer ^BlockingQueue (:queue pool) data blocking-timeout TimeUnit/SECONDS)
      (error "Thread load publish queue is full, blocking till a slot becomes available")
-     (.put ^BlockingQueue (:queue pool) data)
+     (loop []
+       (when-not (.offer ^BlockingQueue (:queue pool) data blocking-timeout TimeUnit/SECONDS)
+         (reset-consumer-threads pool)
+         (Thread/sleep (rand-int 500))                      ;rand sleep just in case :)
+         (recur)))
      (info "Unblocked"))
 
    pool)
