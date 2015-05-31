@@ -10,6 +10,11 @@
     [java.util.concurrent ArrayBlockingQueue]
     [java.util.concurrent.atomic AtomicInteger]))
 
+(defn create-queue [len]
+  (let [^ArrayBlockingQueue queue (ArrayBlockingQueue. len)]
+    (dotimes [i len]
+      (.put queue i))
+    queue))
 
 (defspec call-f-should-return-fail-on-exception
   10
@@ -21,7 +26,8 @@
 (defspec worker-runner-should-call-init-and-terminate
   10
   (prop/for-all [a gen/nat]
-    (let [state (worker-runner! nil (fn [& _] {:called true :status :terminate}) (fn [&_]) (fn [&_]))]
+                               ;exec-delegate queue init exec stop n
+    (let [state (worker-runner! exec-on-data (create-queue 10) (fn [& _] {:called true :status :terminate}) (fn [&_]) (fn [&_]) 1)]
       (:called state))))
 
 
@@ -29,10 +35,11 @@
 (defspec worker-runner-should-call-init-stop-and-terminate
   10
   (prop/for-all [a gen/nat]
-    (let [state (worker-runner! nil 
+    (let [state (worker-runner! exec-on-data (create-queue 10)
                   (fn [& _] {:called [:init] :status :fail}) (fn [&_]) 
                   (fn [{:keys [called status]} data]  
                     {:called (conj called :stop) :status :terminate})
+                  1
                   )]
         (= [:init :stop] (:called state)))))
                                              
@@ -65,12 +72,13 @@
   10
   (prop/for-all [a gen/nat]
     (let [queue (doto (ArrayBlockingQueue. 10) (.add :a))
-          state (worker-runner! queue 
+          state (worker-runner! exec-on-data queue
                   (fn [& _] {:called [:init] }) 
                   (fn [{:keys [called status]} data]
                     {:called (conj called :exec) :data data :status :fail})
                   (fn [{:keys [called status] :as state} data]  
-                    (assoc state :called (conj called :stop) :status :terminate)))]
+                    (assoc state :called (conj called :stop) :status :terminate))
+                  1)]
         (and 
           (= [:init :exec :stop] (:called state))
           (= :a (:data state))))))

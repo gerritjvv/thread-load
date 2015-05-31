@@ -27,8 +27,77 @@ On failure i.e either the state contains ```:fail``` or an exception is thrown b
 if the new-state contains ```:terminate``` the thread will exit, otherwise the thread will loop and call init again passing it the new-state that stop passed.
 This allows the init function to track how many failures have occurred.
 
+## Usage
 
-##Usage
+*Clojure*
+
+
+```clojure
+
+;; Thread load
+
+(def f (api/thread-load-factory :load [(fn [state msg] (prn "state " state " msg " msg) 1)] {:threads 2}))
+      (f :a)
+      ;; state nil  msg  :a
+      ;; state  1  msg  :a
+      (api/size f)
+      ;; 0
+      (api/stats f)
+      ;; -- stats map of the thread-load instance
+      (f) ;shutdown
+      
+;; Disruptor
+(def f (api/thread-load-factory :disruptor [(fn [state msg] (prn "state " state " msg " msg) 1)] {}))
+      (f :a)
+      ;; state nil  msg  :a
+      ;; state  1  msg  :a
+      (f) ;shutdown"  
+```
+
+## Factory pattern
+
+Factory methods to create different thread load implementations  
+
+The model is simple:
+                 The factory returns a function f [msg & args], submit is (f msg) or (apply f msg options), and close is (f)  
+                 When called (f msg) or (apply f msg args) the return value is always the message sent  
+                 When called (f) if the shutdown was successfull a non nil value is returned
+                
+           The thread-load-factory function takes 3 parameters,  
+                          t for type :load default star thread consumptions, see thread-load.core,  
+                          handlers a sequence of handler functions (a single function [f f2 fN] or [[init exec stop] [init exec stop]]),  
+                          conf a configuration map  
+
+                          The exec/handler function should have arity two [state msg] state is what the function returns and if no init function  
+                          will be nil  
+
+           How to write a factory implementation  
+             return a function of structure  
+```clojure
+               (fn  
+                  ([msg]  
+                   ;always return msg
+                   msg)
+                  ([k msg & args]  ;the k is used to support keyed messages
+                   ;always return msg
+                   msg))
+                  ([] doclose-here and return a none nil value if successfull))
+                  
+;;Or use a Proxy if the thread-load instance implements the ILoadMonitorable interface
+
+                (proxy
+                      [AFn ILoadMonitorable] []
+                      (invoke
+                        ([] (disruptor/shutdown-pool dis) :true)
+                        ([msg] (disruptor/publish! dis msg) msg)
+                        ([k msg & args] (disruptor/publish! dis msg) msg))
+                      (size [] 1)
+                      (stats [] dis))
+
+```
+
+
+##Thread Load 
 
 ```clojure
 

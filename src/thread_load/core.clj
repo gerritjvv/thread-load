@@ -7,7 +7,6 @@
 
 (declare exec-on-bulk-data)
 
-
 (defn
   ^ThreadPoolExecutor
   bounded-executor
@@ -56,7 +55,7 @@
   "This function only returns if any of the init, exec, stop functions return status :terminate in the state map"
   [exec-delegate queue init exec stop n]
    (loop [state (call-f init {})] 
-     (condp = (:status state)
+     (case (:status state)
        :fail  (recur (call-on-fail init stop state));will only call init if stop does not fail or temrinate
        :terminate state
        (recur (exec-delegate queue exec state n)))))
@@ -97,7 +96,8 @@
 (defn- reset-consumer-threads [{:keys [active-threads]}]
   (doseq [th @active-threads]
     (info "Interrupting thread " th)
-    (.interrupt ^Thread th)))
+    ;;(.interrupt ^Thread th)
+    ))
 
 (defn publish! 
   "Will block if the queue is full otherwise will send data to the queue which will be processed,
@@ -147,6 +147,7 @@
   [{:keys [^ExecutorService thread-pool]} timeout]
   (.shutdown thread-pool)
   (if (not (.awaitTermination thread-pool (long timeout) TimeUnit/MILLISECONDS))
-    (.shutdownNow thread-pool)))
+    (.shutdownNow thread-pool))
+  :true)
 
   
