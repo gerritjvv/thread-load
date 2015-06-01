@@ -3,6 +3,7 @@
   (:import
     [java.util ArrayList]
     [java.util.concurrent BlockingQueue ArrayBlockingQueue Executors ExecutorService TimeUnit ThreadPoolExecutor]
+    [org.jctools.queues SpmcArrayQueue]
     (thread_load.blocking BlockingExecutor)))
 
 (declare exec-on-bulk-data)
@@ -32,10 +33,8 @@
 
 (defn get-queue-data! 
   "Blocks till data is available on the queue and returns the data, queue must be BlockingQueue"
-  [^BlockingQueue queue]
-  (if-let [v (.poll queue 5 TimeUnit/SECONDS)]
-    v
-    (.take queue)))
+  [^SpmcArrayQueue queue]
+  (.poll queue))
 
 (defn call-on-fail 
   "Only calls init if the return of stop is not :terminate or :fail"
@@ -65,7 +64,7 @@
    Optional keys are :queue-limit = the default is 100 and is the number items a queue can fill before it blocks,
                      :thread-pool = default is a cached thread pool, and is the thread pool in which consumers will run"
   [& {:keys [queue-limit thread-pool] :or {queue-limit 100 thread-pool (Executors/newCachedThreadPool)}}]
-  {:queue (ArrayBlockingQueue. queue-limit)
+  {:queue (SpmcArrayQueue. queue-limit)
    :thread-pool thread-pool
    :limit queue-limit
    :active-threads (atom #{})
@@ -104,14 +103,7 @@
    by one of the consumer functions
    Returns the pool"
   [pool data & {:keys [blocking-timeout] :or {blocking-timeout 120}}]
-   (when-not (.offer ^BlockingQueue (:queue pool) data blocking-timeout TimeUnit/SECONDS)
-     (error "Thread load publish queue is full, blocking till a slot becomes available")
-     (loop []
-       (when-not (.offer ^BlockingQueue (:queue pool) data blocking-timeout TimeUnit/SECONDS)
-         (reset-consumer-threads pool)
-         (Thread/sleep (rand-int 500))                      ;rand sleep just in case :)
-         (recur)))
-     (info "Unblocked"))
+  (.offer ^SpmcArrayQueue (:queue pool) data)
 
    pool)
 
@@ -136,7 +128,7 @@
   "Important: This function is not threadsafe and should only be called from a single producer
    The reason is that the .size of the queue is checked, and if enough space .addAll is called,
    otherwise .put is used"
-  [{:keys [^BlockingQueue queue limit] :as state} data-coll]
+  [{:keys [^SpmcArrayQueue queue limit] :as state} data-coll]
   (if (> (.size queue) limit)
     (.addAll queue data-coll)
     (doseq [data data-coll]

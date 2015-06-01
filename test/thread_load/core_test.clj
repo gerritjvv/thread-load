@@ -6,14 +6,15 @@
     [clojure.test.check.clojure-test :refer [defspec]]
     [thread-load.core :refer :all])
   
-  (:import 
+  (:import
+    [org.jctools.queues SpmcArrayQueue]
     [java.util.concurrent ArrayBlockingQueue]
     [java.util.concurrent.atomic AtomicInteger]))
 
 (defn create-queue [len]
-  (let [^ArrayBlockingQueue queue (ArrayBlockingQueue. len)]
+  (let [^SpmcArrayQueue queue (SpmcArrayQueue. len)]
     (dotimes [i len]
-      (.put queue i))
+      (.offer queue i))
     queue))
 
 (defspec call-f-should-return-fail-on-exception
@@ -44,34 +45,35 @@
         (= [:init :stop] (:called state)))))
                                              
 
+(comment
 
-(defspec test-bulk-operations
-         10
-         (prop/for-all [a gen/nat]
-                       (let [queue (ArrayBlockingQueue. 10)]
-                         (bulk-single-producer-publish! {:queue queue :limit 10} [1 2 3 4 5])
+  (defspec test-bulk-operations
+           10
+           (prop/for-all [a gen/nat]
+                         (let [queue (SpmcArrayQueue. 10)]
+                           (bulk-single-producer-publish! {:queue queue :limit 10} [1 2 3 4 5])
 
-                         (= (.size queue) 5)
+                           (= (.size queue) 5)
 
-                         (future (bulk-single-producer-publish! {:queue queue :limit 10} (range 6 25)))
-                         (while (< (.size queue) 10) (Thread/sleep 1000))
+                           (future (bulk-single-producer-publish! {:queue queue :limit 10} (range 6 25)))
+                           (while (< (.size queue) 10) (Thread/sleep 1000))
 
-                         (let [arr (bulk-get! {:queue queue} 10)]
-                           (= (count arr) 10))
+                           (let [arr (bulk-get! {:queue queue} 10)]
+                             (= (count arr) 10))
 
-                         (.clear queue)
-                         (let [f (future (count (bulk-get! {:queue queue} 10)))]
-                           (future (do
-                                     (Thread/sleep 1000)
-                                     (bulk-single-producer-publish! {:queue queue :limit 10} (range 5))))
+                           (.clear queue)
+                           (let [f (future (count (bulk-get! {:queue queue} 10)))]
+                             (future (do
+                                       (Thread/sleep 1000)
+                                       (bulk-single-producer-publish! {:queue queue :limit 10} (range 5))))
 
-                           (let [n (deref f 5000 -1)]
-                             (> n 0))))))
-
+                             (let [n (deref f 5000 -1)]
+                               (> n 0))))))
+  )
 (defspec worker-runner-should-call-init-exec-stop-and-terminate
   10
   (prop/for-all [a gen/nat]
-    (let [queue (doto (ArrayBlockingQueue. 10) (.add :a))
+    (let [queue (doto (SpmcArrayQueue. 10) (.add :a))
           state (worker-runner! exec-on-data queue
                   (fn [& _] {:called [:init] }) 
                   (fn [{:keys [called status]} data]

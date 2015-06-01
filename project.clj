@@ -16,6 +16,7 @@
            ]
   :dependencies [
     [com.lmax/disruptor "3.3.0"]
+    [org.jctools/jctools-core "1.0"]
 		[org.clojure/tools.logging "0.2.6"]
     [org.clojure/test.check "0.5.8" :scope "test"]
 		[org.clojure/clojure "1.6.0" :scope "provided"]])
