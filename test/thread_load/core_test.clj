@@ -1,20 +1,19 @@
 (ns thread-load.core-test
   (:require 
     [clojure.test.check :as tc]
+    [fun-utils.queue :as queue]
     [clojure.test.check.generators :as gen]
     [clojure.test.check.properties :as prop]
     [clojure.test.check.clojure-test :refer [defspec]]
     [thread-load.core :refer :all])
   
   (:import
-    [org.jctools.queues SpmcArrayQueue]
-    [java.util.concurrent ArrayBlockingQueue]
     [java.util.concurrent.atomic AtomicInteger]))
 
 (defn create-queue [len]
-  (let [^SpmcArrayQueue queue (SpmcArrayQueue. len)]
+  (let [queue (queue/queue-factory :spmc-array-queue len)]
     (dotimes [i len]
-      (.offer queue i))
+      (queue/offer! queue i))
     queue))
 
 (defspec call-f-should-return-fail-on-exception
@@ -50,7 +49,7 @@
   (defspec test-bulk-operations
            10
            (prop/for-all [a gen/nat]
-                         (let [queue (SpmcArrayQueue. 10)]
+                         (let [queue (queue/queue-factory :spmc-array-queue 10)]
                            (bulk-single-producer-publish! {:queue queue :limit 10} [1 2 3 4 5])
 
                            (= (.size queue) 5)
@@ -73,7 +72,8 @@
 (defspec worker-runner-should-call-init-exec-stop-and-terminate
   10
   (prop/for-all [a gen/nat]
-    (let [queue (doto (SpmcArrayQueue. 10) (.add :a))
+    (let [queue (queue/queue-factory :spmc-array-queue 10)
+          _ (do (dotimes [_ 10] (queue/offer! queue :a)))
           state (worker-runner! exec-on-data queue
                   (fn [& _] {:called [:init] }) 
                   (fn [{:keys [called status]} data]

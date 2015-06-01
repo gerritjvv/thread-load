@@ -1,9 +1,10 @@
 (ns thread-load.core
-  (:require [clojure.tools.logging :refer [error debug info]])
+  (:require
+    [fun-utils.queue :as queue]
+    [clojure.tools.logging :refer [error debug info]])
   (:import
     [java.util ArrayList]
-    [java.util.concurrent BlockingQueue ArrayBlockingQueue Executors ExecutorService TimeUnit ThreadPoolExecutor]
-    [org.jctools.queues SpmcArrayQueue]
+    [java.util.concurrent Executors ExecutorService TimeUnit ThreadPoolExecutor]
     (thread_load.blocking BlockingExecutor)))
 
 (declare exec-on-bulk-data)
@@ -33,8 +34,8 @@
 
 (defn get-queue-data! 
   "Blocks till data is available on the queue and returns the data, queue must be BlockingQueue"
-  [^SpmcArrayQueue queue]
-  (.poll queue))
+  [queue]
+  (queue/poll! queue Long/MAX_VALUE))
 
 (defn call-on-fail 
   "Only calls init if the return of stop is not :terminate or :fail"
@@ -62,9 +63,11 @@
 (defn create-pool 
   "Entry point to the API and creates a pool from which consumers can be added
    Optional keys are :queue-limit = the default is 100 and is the number items a queue can fill before it blocks,
-                     :thread-pool = default is a cached thread pool, and is the thread pool in which consumers will run"
-  [& {:keys [queue-limit thread-pool] :or {queue-limit 100 thread-pool (Executors/newCachedThreadPool)}}]
-  {:queue (SpmcArrayQueue. queue-limit)
+                     :thread-pool = default is a cached thread pool, and is the thread pool in which consumers will run
+                     :queue-type = :array-queue :spmc-array-queue :mpmc-array-queue
+  "
+  [& {:keys [queue-limit queue-type thread-pool] :or {queue-limit 100 queue-type :array-queue thread-pool (Executors/newCachedThreadPool)}}]
+  {:queue (queue/queue-factory queue-type queue-limit)
    :thread-pool thread-pool
    :limit queue-limit
    :active-threads (atom #{})
@@ -102,16 +105,15 @@
   "Will block if the queue is full otherwise will send data to the queue which will be processed,
    by one of the consumer functions
    Returns the pool"
-  [pool data & {:keys [blocking-timeout] :or {blocking-timeout 120}}]
-  (.offer ^SpmcArrayQueue (:queue pool) data)
-
+  [pool data]
+  (queue/offer! (:queue pool) data Long/MAX_VALUE)
    pool)
 
 (defn bulk-get!
   "Returns a collection of at least n,
    If no data is available in the queue a blocking operation is performed
    Note the return value is of type Collection."
-  [{:keys [^BlockingQueue queue]} n]
+  [{:keys [queue]} n]
   (let [arr (ArrayList. (int n))
         n2 (.drainTo queue arr)]
     (if (zero? n2)
@@ -128,7 +130,7 @@
   "Important: This function is not threadsafe and should only be called from a single producer
    The reason is that the .size of the queue is checked, and if enough space .addAll is called,
    otherwise .put is used"
-  [{:keys [^SpmcArrayQueue queue limit] :as state} data-coll]
+  [{:keys [queue limit] :as state} data-coll]
   (if (> (.size queue) limit)
     (.addAll queue data-coll)
     (doseq [data data-coll]
