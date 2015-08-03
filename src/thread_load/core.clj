@@ -35,7 +35,7 @@
 (defn get-queue-data! 
   "Blocks till data is available on the queue and returns the data, queue must be BlockingQueue"
   [queue]
-  (queue/poll! queue Long/MAX_VALUE))
+  (queue/poll! queue))
 
 (defn call-on-fail 
   "Only calls init if the return of stop is not :terminate or :fail"
