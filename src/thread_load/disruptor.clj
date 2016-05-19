@@ -42,10 +42,6 @@
     :else
     (throw (RuntimeException. (str "Wait strategy can only be :yield :block :spin but got " type)))))
 
-(defn add-event-handler [{:keys [disruptor]} f]
-  (.handleEventsWith ^Disruptor disruptor (into-array [(event-handler f)])))
-
-
 (defn create-disruptor [event-f & {:keys [buffer-size producer-type wait-strategy executor-service]
                                    :or {buffer-size 1024 producer-type :multi wait-strategy :block executor-service nil}}]
   (let [^ExecutorService service (if executor-service executor-service (Executors/newCachedThreadPool))
@@ -55,7 +51,7 @@
                                              service
                                              (get-producer-type producer-type)
                                              (get-wait-strategy wait-strategy))
-                                 (.handleEventsWith (into-array [(event-handler event-f)]))
+                                 (.handleEventsWith (into-array EventHandler [(event-handler event-f)]))
                                  .start)]
     {:exec-service service :ring-buffer (.getRingBuffer disruptor) :disruptor disruptor :exec-service-type (if executor-service :shared :unique) }))
 

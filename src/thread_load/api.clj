@@ -39,7 +39,7 @@
 
 
      usage
-      (def f (api/thread-load-factory :load [(fn [state msg] (prn " state " state " msg " msg) 1)] {}))
+      (def f (api/thread-load-factory :load [(fn [state msg] (prn \" state \" state \" msg \" msg) 1)] {}))
       (f :a)
       ;; state nil  msg  :a
       ;; state  1  msg  :a

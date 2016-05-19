@@ -36,28 +36,3 @@
                          (shutdown! processor)
                          (> @counter 1))))
 
-(comment
-  (import 'thread_load.streams.StreamsConf)
-  (import 'thread_load.streams.StreamsProcessor)
-
-  (def counter (atom 0))
-  (def streams (repeatedly 1000 (fn [] (repeatedly #(rand-int 100)))))
-
-  (def streams-load-f (fn
-                        ([] streams)
-                        ([streams]
-                         (if-let [stream (first streams)]
-                           [(rest streams) stream]
-                           (Thread/sleep Integer/MAX_VALUE)))))
-  (def streams-read-f (fn
-                        ([] nil)
-                        ([_ stream]
-                         [nil (nth stream (rand-int 100))])))
-  (def process-f (fn
-                   ([] nil)
-                   ([_ data]
-                    (swap! counter inc)
-                    nil)))
-
-  (def p (StreamsProcessor/createProcessor streams-load-f streams-read-f process-f (StreamsConf.)))
-  )
