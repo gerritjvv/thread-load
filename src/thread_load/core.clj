@@ -4,7 +4,7 @@
     [clojure.tools.logging :refer [error debug info]])
   (:import
     [java.util ArrayList]
-    [java.util.concurrent Executors ExecutorService TimeUnit ThreadPoolExecutor]
+    [java.util.concurrent Executors ExecutorService TimeUnit ThreadPoolExecutor ArrayBlockingQueue]
     (thread_load.blocking BlockingExecutor)))
 
 (declare exec-on-bulk-data)
@@ -35,7 +35,7 @@
 (defn get-queue-data! 
   "Blocks till data is available on the queue and returns the data, queue must be BlockingQueue"
   [queue]
-  (queue/poll! queue))
+  (queue/poll! queue Long/MAX_VALUE))
 
 (defn call-on-fail 
   "Only calls init if the return of stop is not :terminate or :fail"
@@ -106,19 +106,17 @@
    by one of the consumer functions
    Returns the pool"
   [pool data]
-  (queue/offer! (:queue pool) data Long/MAX_VALUE)
+  (queue/offer! (:queue pool) data)
    pool)
 
 (defn bulk-get!
   "Returns a collection of at least n,
-   If no data is available in the queue a blocking operation is performed
    Note the return value is of type Collection."
-  [{:keys [queue]} n]
-  (let [arr (ArrayList. (int n))
-        n2 (.drainTo queue arr)]
-    (if (zero? n2)
-      [(get-queue-data! queue)]
-      arr)))
+  [pool n]
+  (let [v (queue/-drain! (:queue pool) n)]
+    (if (empty? v)
+      (queue/poll! (:queue pool) Long/MAX_VALUE)
+      v)))
 
 
 (defn exec-on-bulk-data
