@@ -101,7 +101,7 @@
     ;;(.interrupt ^Thread th)
     ))
 
-(defn publish! 
+(defn publish!
   "Will block if the queue is full otherwise will send data to the queue which will be processed,
    by one of the consumer functions
    Returns the pool"
@@ -125,14 +125,10 @@
   (call-f exec state (bulk-get! {:queue queue} n)))
 
 (defn bulk-single-producer-publish!
-  "Important: This function is not threadsafe and should only be called from a single producer
-   The reason is that the .size of the queue is checked, and if enough space .addAll is called,
-   otherwise .put is used"
+  "currently does single publish"
   [{:keys [queue limit] :as state} data-coll]
-  (if (> (.size queue) limit)
-    (.addAll queue data-coll)
-    (doseq [data data-coll]
-      (publish! state data))))
+  (doseq [data data-coll]
+    (publish! state data)))
 
 (defn shutdown-pool 
   "Shutdown the ExecutorService used and wait for termination timeout milliseconds, if the threads did not all terminate, the pool is shutdown forcefully"
