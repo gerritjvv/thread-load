@@ -115,7 +115,7 @@
   [pool n]
   (let [v (queue/-drain! (:queue pool) n)]
     (if (empty? v)
-      (queue/poll! (:queue pool) Long/MAX_VALUE)
+      [(queue/poll! (:queue pool) Long/MAX_VALUE)]
       v)))
 
 
